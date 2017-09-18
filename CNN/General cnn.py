@@ -1,39 +1,39 @@
 #!/usr/bin/python3
 # -*- coding:utf-8 -*-
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-
 import tensorflow as tf
 import numpy as np
+import matplotlib.pyplot as plt
 from tensorflow.contrib.layers.python.layers import batch_norm
-from tensorflow.contrib import rnn
 from tensorflow.examples.tutorials.mnist import input_data
 # from tensorflow.python.framework import ops
 
 # ops.reset_default_graph()
 """
-only cnn ，not full connect
+General cnn 一般cnn搭建方法
+http://blog.csdn.net/wc781708249/article/details/78007593
 """
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
 # 定义一些参数
 batch_size = 128
 droup_out = 0.7
-learn_rate = 0.001
-num_steps = 100000
-disp_step = 2000
-
-img_size=28
-n_classes = 10
+learn_rate = 0.1
+num_steps = 10
+disp_step = 2
 
 with tf.Graph().as_default() as graph:
     # mnist图像大小是28x28 分成0~9 共10类
-    x=tf.placeholder(tf.float32,[None,img_size*img_size])
-    y_=tf.placeholder(tf.float32,[None,n_classes])
+    x=tf.placeholder(tf.float32,[None,28*28*1])
+    y_=tf.placeholder(tf.float32,[None,10])
     keep=tf.placeholder(tf.float32)
     is_training = tf.placeholder(tf.bool, name='MODE')
+
+    x_img=tf.reshape(x,[-1,28,28,1])
 
     def batch_norm_layer(inputT, is_training=True, scope=None):
         # Note: is_training is tf.placeholder(tf.bool) type
@@ -44,51 +44,54 @@ with tf.Graph().as_default() as graph:
                                           center=True, scale=True, activation_fn=tf.nn.relu, decay=0.9,
                                           scope=scope, reuse = True))
 
-    def conv2d(input,kernel_size,input_size,output_size,is_training,name):
+
+    def conv2d(input, kernel_size, input_size, output_size, is_training, name):
         with tf.name_scope(name) as scope:
             with tf.variable_scope(name):
                 # scope.reuse_variables()
-                w=tf.get_variable('w',[kernel_size,kernel_size,input_size,output_size],tf.float32,initializer=tf.random_uniform_initializer)*0.001
-                b=tf.get_variable('b',[output_size],tf.float32,initializer=tf.random_normal_initializer)+0.1
-                conv=tf.nn.conv2d(input,w,[1,1,1,1],padding="SAME")
+                w = tf.get_variable('w', [kernel_size, kernel_size, input_size, output_size], tf.float32,
+                                    initializer=tf.random_uniform_initializer) * 0.001
+                b = tf.get_variable('b', [output_size], tf.float32, initializer=tf.random_normal_initializer) + 0.1
+                conv = tf.nn.conv2d(input, w, [1, 1, 1, 1], padding="SAME")
                 conv = tf.nn.bias_add(conv, b)
-                conv=batch_norm_layer(conv,is_training,scope)
-                conv=tf.nn.relu(conv)
+                conv = batch_norm_layer(conv, is_training, scope)
+                conv = tf.nn.relu(conv)
         return conv
 
+    def fc_layer(input,input_size,output_size,is_training,name):
+        with tf.name_scope(name) as scope:
+            with tf.variable_scope(name):
+                w = tf.get_variable('w', [input_size, output_size], tf.float32,
+                                    initializer=tf.random_uniform_initializer) * 0.001
+                b = tf.get_variable('b', [output_size], tf.float32, initializer=tf.random_normal_initializer) + 0.1
+                fc=tf.nn.bias_add(tf.matmul(input,w),b)
+                fc=batch_norm_layer(fc,is_training,scope)
+                # fc = tf.nn.relu(fc)
+                return fc
 
-    x_img = tf.reshape(x, [-1, img_size, img_size, 1])
-
-    # conv1
-    conv1=conv2d(tf.image.convert_image_dtype(x_img,tf.float32),
-                 3,1,16,is_training,'conv1')
-    conv1 = tf.nn.max_pool(conv1, [1, 2, 2, 1], [1, 2, 2, 1], padding="SAME")  # [n,14,14,16]
+    # convolution1
+    conv1 = conv2d(tf.image.convert_image_dtype(x_img, tf.float32),
+                   3, 1, 32, is_training, 'conv1')
+    conv1 = tf.nn.max_pool(conv1, [1, 2, 2, 1], [1, 2, 2, 1], padding="SAME")  # [n,14,14,32]
     conv1 = tf.nn.lrn(conv1, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm1')
     conv1 = tf.nn.dropout(conv1, keep)
 
-    # conv2
+    # convolution2
     conv2 = conv2d(conv1,
-                   3, 16, 32, is_training,'conv2')
-    conv2 = tf.nn.max_pool(conv2, [1, 2, 2, 1], [1, 2, 2, 1], padding="SAME")  # [n,7,7,32]
+                   3, 32, 64, is_training, 'conv2')
+    conv2 = tf.nn.max_pool(conv2, [1, 2, 2, 1], [1, 2, 2, 1], padding="SAME")  # [n,7,7,64]
     conv2 = tf.nn.lrn(conv2, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm2')
     conv2 = tf.nn.dropout(conv2, keep)
 
-    # conv3
-    conv3 = conv2d(conv2,
-                   3, 32, 64, is_training,'conv3')
-    conv3 = tf.nn.max_pool(conv3, [1, 2, 2, 1], [1, 2, 2, 1], padding="VALID")  # [n,3,3,64]
-    conv3 = tf.nn.lrn(conv3, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm3')
-    conv3 = tf.nn.dropout(conv3, keep)
+    # full connect
+    fc1=tf.reshape(conv2,[-1,7*7*64])
 
-    # conv4
-    conv4 = conv2d(conv3,
-                   3, 64, 10, is_training,'conv4')
-    conv4 = tf.nn.max_pool(conv4, [1, 2, 2, 1], [1, 2, 2, 1], padding="VALID")  # [n,1,1,10]
-    conv4 = tf.nn.lrn(conv4, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm4')
-    # conv4 = tf.nn.dropout(conv4, keep)
+    fc1=fc_layer(fc1,7*7*64,512,is_training,'fc1')
+    fc1=tf.nn.relu(fc1)
+    fc1=tf.nn.dropout(fc1,keep)
 
-    # output
-    y=tf.reshape(conv4,[-1,n_classes])
+    fc2=fc_layer(fc1,512,10,is_training,'output')
+    y=tf.nn.softmax(fc2)
 
     loss=tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_,logits=y))
 
