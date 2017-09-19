@@ -117,7 +117,7 @@ def load_images_from_tfrecord(tfrecord_file,batch_size):
     #                         }, lambda: tf.constant(-1), exclusive=True)
 
 
-    min_after_dequeue = 10
+    min_after_dequeue = 1000
     # batch_size = 3
     capacity = min_after_dequeue + 3 * batch_size
     image_batch, label_batch = tf.train.shuffle_batch(

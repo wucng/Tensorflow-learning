@@ -321,6 +321,10 @@ if __name__=="__main__":
                 while not coord.should_stop():
                     for i in range(10):
                         [batch_xs, batch_ys] = sess.run([img_batch, label_batch])
+                        batch_xs = batch_xs.reshape([-1, img_piexl * img_piexl * channels])
+                        # normal
+                        batch_xs -= np.mean(batch_xs, axis=0)
+                        batch_xs /= np.std(batch_xs, axis=0) + 0.0001  # 防止出现除数为0
                         batch_xs = batch_xs.reshape([-1, img_piexl, img_piexl, channels])
                         batch_ys = batch_ys.reshape([-1, ])
                         acc=accuracy.eval({x: batch_xs, y_: batch_ys, keep: 1.})
