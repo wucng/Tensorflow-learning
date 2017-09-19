@@ -11,6 +11,8 @@ from tensorflow.contrib.layers.python.layers import batch_norm
 import argparse
 
 """
+参数调节参考：
+http://blog.csdn.net/wc781708249/article/details/78013750
 only cnn no full connect
 tfrecord to numpy for train
 batch_norm

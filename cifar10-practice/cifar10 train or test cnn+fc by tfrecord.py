@@ -11,6 +11,8 @@ from tensorflow.contrib.layers.python.layers import fully_connected,convolution2
 import argparse
 
 """
+参数调节参考：
+http://blog.csdn.net/wc781708249/article/details/78013750
 cnn have full connect
 tfrecord to numpy for train
 batch_norm
