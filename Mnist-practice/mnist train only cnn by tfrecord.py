@@ -7,18 +7,17 @@ from __future__ import print_function
 import tensorflow as tf
 # import glob
 import numpy as np
-from tensorflow.contrib.layers.python.layers import fully_connected,convolution2d
+from tensorflow.contrib.layers.python.layers import batch_norm
 import argparse
 
 """
 参数调节参考：
 http://blog.csdn.net/wc781708249/article/details/78013750
-cnn have full connect
+only cnn no full connect
 tfrecord to numpy for train
 batch_norm
 lrn
 渐变的lr
-sparse_softmax_cross_entropy_with_logits
 
 样本数据归一化
 xs is of size[N x D] (N is the number of data, D is their dimensionality).
@@ -61,14 +60,14 @@ http://blog.csdn.net/wc781708249/article/details/78013275
 parser = argparse.ArgumentParser()
 parser.add_argument("-bs", "--batch_size", help="The batch size",type=int,default=128)
 parser.add_argument("-do", "--droup_out", help="The droup out",type=float,default=0.7)
-parser.add_argument("-lr", "--learn_rate", help="The learn rate",type=float,default=1e-2)
-parser.add_argument("-ns", "--num_steps", help="The num steps",type=int,default=100000)
-parser.add_argument("-ds", "--disply_step", help="The disp step",type=int,default=2000)
-parser.add_argument("-ipi", "--img_piexl", help="The image piexl",type=int,default=32)
-parser.add_argument("-ch", "--channels", help="The image channels",type=int,default=3)
+parser.add_argument("-lr", "--learn_rate", help="The learn rate",type=float,default=1e-1)
+parser.add_argument("-ns", "--num_steps", help="The num steps",type=int,default=1000)
+parser.add_argument("-ds", "--disply_step", help="The disp step",type=int,default=200)
+parser.add_argument("-ipi", "--img_piexl", help="The image piexl",type=int,default=28)
+parser.add_argument("-ch", "--channels", help="The image channels",type=int,default=1)
 parser.add_argument("-nc", "--n_classes", help="The image n classes",type=int,default=10)
 parser.add_argument("-tr", "--train", help="The train/test mode",type=int,default=1)# 1 train 0 test
-parser.add_argument("-log", "--logdir", help="The model logdir",type=str,default="./output2/")
+parser.add_argument("-log", "--logdir", help="The model logdir",type=str,default="./output/")
 parser.add_argument("-md", "--model_name", help="The model name",type=str,default="model.ckpt")
 args = parser.parse_args()
 print("args:",args)
@@ -76,8 +75,8 @@ print("args:",args)
 
 batch_size=args.batch_size
 droup_out = args.droup_out
-# learn_rate = args.learn_rate
-INITIAL_LEARNING_RATE=args.learn_rate
+learn_rate = args.learn_rate
+# INITIAL_LEARNING_RATE=args.learn_rate
 num_steps = args.num_steps
 disp_step = args.disply_step
 img_piexl=args.img_piexl
@@ -118,7 +117,7 @@ def load_images_from_tfrecord(tfrecord_file,batch_size):
     #                         }, lambda: tf.constant(-1), exclusive=True)
 
 
-    min_after_dequeue = 1000
+    min_after_dequeue = 10
     # batch_size = 3
     capacity = min_after_dequeue + 3 * batch_size
     image_batch, label_batch = tf.train.shuffle_batch(
@@ -145,90 +144,69 @@ x=tf.placeholder(tf.float32,[None,img_piexl,img_piexl,channels])
 # y_=tf.placeholder(tf.float32,[None,n_classes])
 y_ = tf.placeholder(tf.int64, [None, ])
 keep=tf.placeholder(tf.float32)
+is_training = tf.placeholder(tf.bool, name='MODE')
 
 # x_img=tf.reshape(x,[-1,img_piexl,img_piexl,channels])
 
+def batch_norm_layer(inputT, is_training=True, scope=None):
+    # Note: is_training is tf.placeholder(tf.bool) type
+    return tf.cond(is_training,
+                   lambda: batch_norm(inputT, is_training=True,
+                                      center=True, scale=True, activation_fn=tf.nn.relu, decay=0.9, scope=scope),
+                   lambda: batch_norm(inputT, is_training=False,
+                                      center=True, scale=True, activation_fn=tf.nn.relu, decay=0.9,
+                                      scope=scope, reuse=True))
+
+def conv2d(input, kernel_size, input_size, output_size, is_training, name):
+    with tf.name_scope(name) as scope:
+        with tf.variable_scope(name):
+            # scope.reuse_variables()
+            w = tf.get_variable('w', [kernel_size, kernel_size, input_size, output_size], tf.float32,
+                                initializer=tf.random_uniform_initializer) * np.sqrt(2.0/input_size)
+            b = tf.get_variable('b', [output_size], tf.float32, initializer=tf.random_normal_initializer) + 0.1
+            conv = tf.nn.conv2d(input, w, [1, 1, 1, 1], padding="SAME")
+            conv = tf.nn.bias_add(conv, b)
+            conv = batch_norm_layer(conv, is_training, scope)
+            conv = tf.nn.relu(conv)
+    return conv
+
+
 # -----↓------↓------↓------↓------↓------↓-------↓-----↓--------↓--------#
 # convolution1
-"""
-conv1=tf.layers.conv2d(
-    tf.image.convert_image_dtype(x_img,dtype=tf.float32),
-    filters=32, # 输出通道由1->32
-    kernel_size=(3,3), # 3x3卷积核
-    activation=tf.nn.relu,
-    padding='SAME',
-    kernel_initializer=tf.random_uniform_initializer,
-    bias_initializer=tf.random_normal_initializer
-)
-"""
-conv1=convolution2d(
-    # tf.image.convert_image_dtype(x_img,dtype=tf.float32),
-    x,
-    num_outputs=64,
-    kernel_size=(3,3),
-    activation_fn=tf.nn.relu,
-    normalizer_fn=tf.layers.batch_normalization,
-    weights_initializer=tf.random_uniform_initializer,
-    biases_initializer=tf.random_normal_initializer,
-    trainable=True
-)
-
-conv1=tf.nn.max_pool(conv1,[1,2,2,1],[1,2,2,1],padding="SAME") # [n,16,16,64]
+conv1=conv2d(#tf.image.convert_image_dtype(x_img,tf.float32),
+                x,
+                 3,1,32,is_training,'conv1')
+conv1=tf.nn.max_pool(conv1,[1,2,2,1],[1,2,2,1],padding="SAME") # [n,14,14,16]
 conv1 = tf.nn.dropout(conv1, keep)
 conv1 = tf.nn.lrn(conv1, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
                   name='norm1')
 
 # convolution2
-"""
-conv2=tf.layers.conv2d(
-    conv1,
-    filters=64, # 输出通道由1->32
-    kernel_size=(3,3), # 3x3卷积核
-    activation=tf.nn.relu,
-    padding='SAME',
-    kernel_initializer=tf.random_uniform_initializer,
-    bias_initializer=tf.random_normal_initializer
-)
-"""
-conv2=convolution2d(
-    conv1,
-    num_outputs=128,
-    kernel_size=(3,3),
-    activation_fn=tf.nn.relu,
-    normalizer_fn=tf.layers.batch_normalization,
-    weights_initializer=tf.random_uniform_initializer,
-    biases_initializer=tf.random_normal_initializer,
-    trainable=True
-)
-
-conv2=tf.nn.max_pool(conv2,[1,2,2,1],[1,2,2,1],padding="SAME") # [n,8,8,128]
+conv2 = conv2d(conv1,
+                   3, 32, 64, is_training,'conv2')
+conv2=tf.nn.max_pool(conv2,[1,2,2,1],[1,2,2,1],padding="SAME") # [n,7,7,32]
 conv2 = tf.nn.dropout(conv2, keep)
 conv2 = tf.nn.lrn(conv2, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75,
                   name='norm2')
-# full connect
-fc1=tf.reshape(conv2,[-1,8*8*128])
-fc1=fully_connected(
-    fc1,
-    num_outputs=1024,
-    activation_fn=tf.nn.relu,
-    normalizer_fn=tf.layers.batch_normalization,
-    weights_initializer=tf.random_uniform_initializer,
-    biases_initializer=tf.random_normal_initializer,
-    weights_regularizer=tf.nn.l2_loss,
-    biases_regularizer=tf.nn.l2_loss,
-) # [N,1024]
-fc1=tf.nn.dropout(fc1,keep)
 
-y=fully_connected(
-    fc1,
-    num_outputs=n_classes,
-    activation_fn=tf.nn.softmax,
-    normalizer_fn=tf.layers.batch_normalization,
-    weights_initializer=tf.random_uniform_initializer,
-    biases_initializer=tf.random_normal_initializer,
-    weights_regularizer=tf.nn.l2_loss,
-    biases_regularizer=tf.nn.l2_loss,
-) # [N,10]
+# conv3
+conv3 = conv2d(conv2,
+               3, 64, 128, is_training,'conv3')
+conv3 = tf.nn.max_pool(conv3, [1, 2, 2, 1], [1, 2, 2, 1], padding="VALID")  # [n,3,3,64]
+conv3 = tf.nn.lrn(conv3, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm3')
+conv3 = tf.nn.dropout(conv3, keep)
+
+
+# conv4
+conv4 = conv2d(conv3,
+               3, 128, 10, is_training,'conv4')
+conv4 = tf.nn.max_pool(conv4, [1, 2, 2, 1], [1, 2, 2, 1], padding="VALID")  # [n,1,1,10]
+conv4 = tf.nn.lrn(conv4, 4, bias=1.0, alpha=0.001 / 9.0, beta=0.75, name='norm4')
+# conv4 = tf.nn.dropout(conv4, keep)
+
+
+# output
+y=tf.reshape(conv4,[-1,n_classes])
 
 # ------↑-----↑-------↑-----↑---------↑----↑--------↑-------↑-----↑----------#
 
@@ -243,7 +221,7 @@ global_step = tf.Variable(0, name="global_step", trainable=False)
       #                                            10000,
       #                                            0.96,
       #                                            staircase=False)
-learn_rate=tf.train.polynomial_decay(INITIAL_LEARNING_RATE,global_step,70000,1e-6,0.8,False)
+# learn_rate=tf.train.polynomial_decay(INITIAL_LEARNING_RATE,global_step,70000,1e-6,0.8,False)
 
 
 train_op=tf.train.AdamOptimizer(learn_rate).minimize(loss,global_step=global_step)
@@ -282,18 +260,18 @@ if __name__=="__main__":
                 while not coord.should_stop():
                     for step in range(num_steps):
                     # while step<num_steps:
-                        [batch_xs, batch_ys] = sess.run([img_batch, label_batch])
-                        batch_xs = batch_xs.reshape([-1, img_piexl * img_piexl * channels])
+                        [batch_xs,batch_ys]=sess.run([img_batch,label_batch])
+                        batch_xs=batch_xs.reshape([-1,img_piexl*img_piexl*channels])
                         # normal
                         batch_xs -= np.mean(batch_xs, axis=0)
-                        batch_xs /= np.std(batch_xs, axis=0) + 0.0001  # 防止出现除数为0
+                        batch_xs /= np.std(batch_xs, axis=0)+0.0001 # 防止出现除数为0
                         batch_xs = batch_xs.reshape([-1, img_piexl, img_piexl, channels])
-                        batch_ys = batch_ys.reshape([-1, ])
-                        train_op.run({x: batch_xs, y_: batch_ys, keep: droup_out})
+                        batch_ys=batch_ys.reshape([-1,])
+                        train_op.run({x: batch_xs, y_: batch_ys, keep: droup_out,is_training:True})
                         # step=sess.run(global_step)
                         if step % disp_step == 0:
-                            print("step", step, 'acc', accuracy.eval({x: batch_xs, y_: batch_ys, keep: droup_out}), 'loss',
-                                  loss.eval({x: batch_xs, y_: batch_ys, keep: droup_out}))
+                            print("step", step, 'acc', accuracy.eval({x: batch_xs, y_: batch_ys, keep: droup_out,is_training:True}), 'loss',
+                                  loss.eval({x: batch_xs, y_: batch_ys, keep: droup_out,is_training:True}))
                         saver.save(sess, logdir + args.model_name, global_step=step)
                     else:
                         break
@@ -321,9 +299,13 @@ if __name__=="__main__":
                 while not coord.should_stop():
                     for i in range(10):
                         [batch_xs, batch_ys] = sess.run([img_batch, label_batch])
+                        batch_xs = batch_xs.reshape([-1, img_piexl*img_piexl*channels])
+                        batch_xs -= np.mean(batch_xs, axis=0)
+                        batch_xs /= np.std(batch_xs, axis=0) + 0.0001  # 防止出现除数为0
                         batch_xs = batch_xs.reshape([-1, img_piexl, img_piexl, channels])
                         batch_ys = batch_ys.reshape([-1, ])
-                        acc=accuracy.eval({x: batch_xs, y_: batch_ys, keep: 1.})
+                        # acc=accuracy.eval({x: batch_xs, y_: batch_ys, keep: 1.,is_training:False})
+                        acc = accuracy.eval({x: batch_xs, y_: batch_ys, keep: 1., is_training: True})
                         print('test acc',acc)
                     else:
                         break
@@ -332,4 +314,3 @@ if __name__=="__main__":
             finally:
                 coord.request_stop()
             coord.join(threads)
-

@@ -43,7 +43,8 @@ def images_to_tfrecord(image_filenames,record_location,img_pixel_h=250,img_pixel
             image = image.convert('L')  # 转成灰度图
             image = image.resize((img_pixel_h, img_pixel_w))
             # image_bytes = sess.run(tf.cast(resized_image, tf.uint8)).tobytes()
-            image_bytes = image.tobytes()  # 将图片转化为原生bytes
+            image_bytes=np.array(image,np.float32).tobytes()
+            # image_bytes = image.tobytes()  # 将图片转化为原生bytes
         except:
             print(image_filename)
             continue

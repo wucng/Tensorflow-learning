@@ -136,7 +136,8 @@ for step in range(num_steps):
               'loss',loss.eval({x:batch_xs,y_:batch_ys,keep:droup_out,is_training:True}))
 
 # test acc
-acc = compute_acc(mnist.test.images, np.reshape(mnist.test.images,[-1,IMAGE_PIXELS,IMAGE_PIXELS])/255., IMAGE_PIXELS,False)
+# acc = compute_acc(mnist.test.images, np.reshape(mnist.test.images,[-1,IMAGE_PIXELS,IMAGE_PIXELS])/255., IMAGE_PIXELS,False)
+acc = compute_acc(mnist.test.images, np.reshape(mnist.test.images,[-1,IMAGE_PIXELS,IMAGE_PIXELS])/255., IMAGE_PIXELS,True)
 print('test acc',acc)
 
 sess.close()

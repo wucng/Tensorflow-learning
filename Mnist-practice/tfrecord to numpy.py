@@ -36,7 +36,7 @@ def load_images_from_tfrecord(tfrecord_file):
     # Changing the image into this shape helps train and visualize the output by converting it to
     # be organized like an image.
     # 修改图像的形状有助于训练和输出的可视化
-    image = tf.reshape(record_image, [32, 32, 3])
+    image = tf.reshape(record_image, [28, 28, 1])
 
     # label = tf.cast(features['label'], tf.string)
     label = tf.cast(features['label'], tf.int64)

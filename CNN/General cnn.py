@@ -113,6 +113,7 @@ for step in range(num_steps):
               'loss',loss.eval({x:batch_xs,y_:batch_ys,keep:droup_out,is_training:True}))
 
 # test acc
-print('test acc',accuracy.eval({x:mnist.test.images,y_:mnist.test.labels,keep:1.,is_training:False}))
+# print('test acc',accuracy.eval({x:mnist.test.images,y_:mnist.test.labels,keep:1.,is_training:False}))
+print('test acc',accuracy.eval({x:mnist.test.images,y_:mnist.test.labels,keep:1.,is_training:True}))
 
 sess.close()

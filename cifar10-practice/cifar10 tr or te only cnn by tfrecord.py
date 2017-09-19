@@ -100,7 +100,7 @@ def load_images_from_tfrecord(tfrecord_file,batch_size):
             'image': tf.FixedLenFeature([], tf.string),
         })
 
-    record_image = tf.decode_raw(features['image'], tf.uint8)
+    record_image = tf.decode_raw(features['image'], tf.float32)
 
     # Changing the image into this shape helps train and visualize the output by converting it to
     # be organized like an image.
@@ -247,23 +247,25 @@ if __name__=="__main__":
     if train:
         img_batch, label_batch=load_images_from_tfrecord("output/training-images/*.tfrecords",batch_size)
         with tf.Session(graph=tf.get_default_graph()) as sess:
+            tf.global_variables_initializer().run()
+            tf.local_variables_initializer().run()
             saver = tf.train.Saver()
             # 验证之前是否已经保存了检查点文件
             ckpt = tf.train.get_checkpoint_state(logdir)
             if ckpt and ckpt.model_checkpoint_path:
                 saver.restore(sess, ckpt.model_checkpoint_path)
                 # initial_step = int(ckpt.model_checkpoint_path.rsplit('-', 1)[1])
-            else:
-                tf.global_variables_initializer().run()
-                tf.local_variables_initializer().run()
+            #else:
+            #    tf.global_variables_initializer().run()
+            #    tf.local_variables_initializer().run()
 
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(sess=sess, coord=coord)
             step=0
             try:
                 while not coord.should_stop():
-                    # for step in range(num_steps):
-                    while step<num_steps:
+                    for step in range(num_steps):
+                    # while step<num_steps:
                         [batch_xs,batch_ys]=sess.run([img_batch,label_batch])
                         batch_xs=batch_xs.reshape([-1,img_piexl*img_piexl*channels])
                         # normal
@@ -272,7 +274,7 @@ if __name__=="__main__":
                         batch_xs = batch_xs.reshape([-1, img_piexl, img_piexl, channels])
                         batch_ys=batch_ys.reshape([-1,])
                         train_op.run({x: batch_xs, y_: batch_ys, keep: droup_out,is_training:True})
-                        step=sess.run(global_step)
+                        # step=sess.run(global_step)
                         if step % disp_step == 0:
                             print("step", step, 'acc', accuracy.eval({x: batch_xs, y_: batch_ys, keep: droup_out,is_training:True}), 'loss',
                                   loss.eval({x: batch_xs, y_: batch_ys, keep: droup_out,is_training:True}))
@@ -308,7 +310,8 @@ if __name__=="__main__":
                         batch_xs /= np.std(batch_xs, axis=0) + 0.0001  # 防止出现除数为0
                         batch_xs = batch_xs.reshape([-1, img_piexl, img_piexl, channels])
                         batch_ys = batch_ys.reshape([-1, ])
-                        acc=accuracy.eval({x: batch_xs, y_: batch_ys, keep: 1.,is_training:False})
+                        # acc=accuracy.eval({x: batch_xs, y_: batch_ys, keep: 1.,is_training:False})
+                        acc = accuracy.eval({x: batch_xs, y_: batch_ys, keep: 1., is_training: True})
                         print('test acc',acc)
                     else:
                         break

@@ -4,21 +4,21 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import tflearn
-from tflearn.datasets import cifar10
+# import tflearn
+# from tflearn.datasets import cifar10
+from tensorflow.examples.tutorials.mnist import input_data
 import tensorflow as tf
 import numpy as np
 
 """
-cifar10 to tfrecord
+mnist to tfrecord
 """
 
-
-def cifar10_to_tfrecord(images,labels,record_location):
+def mnist_to_tfrecord(images,labels,record_location):
     m = 0
     writer=None
     for image,label in zip(images,labels):
-        image=np.reshape(image,[32,32,3]).astype(np.float32)
+        image=np.reshape(image,[28,28,1]).astype(np.float32)
         image_bytes = image.tobytes()
         # image_label = label.encode("utf-8")
         label=np.uint8(label)
@@ -40,8 +40,9 @@ def cifar10_to_tfrecord(images,labels,record_location):
     writer.close()
 
 if __name__=="__main__":
-    (X, Y), (testX, testY) = cifar10.load_data()
+    # (X, Y), (testX, testY) = cifar10.load_data()
+    mnist = input_data.read_data_sets("MNIST_data/", one_hot=False)
     # print(X.shape) # (50000, 32, 32, 3)
     # print(Y.shape) # (50000,)
-    cifar10_to_tfrecord(X, Y, './output/training-images/training-images')
-    cifar10_to_tfrecord(testX, testY, './output/testing-images/testing-images')
+    mnist_to_tfrecord(mnist.train.images, mnist.train.labels, './output/training-images/training-images')
+    mnist_to_tfrecord(mnist.test.images, mnist.test.labels, './output/testing-images/testing-images')

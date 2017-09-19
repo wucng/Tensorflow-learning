@@ -104,7 +104,7 @@ def write_records_file(dataset, record_location):
 # resized_image=tf.image.resize_image_with_crop_or_pad(grayscale_image,250,151)
 
                 # 这里之所以使用tf.cast,是因为虽然尺寸更改后的图像数据类型是浮点型，但RGB尚未转换到[0,1)区间内
-                image_bytes = sess.run(tf.cast(resized_image, tf.uint8)).tobytes()
+                image_bytes = sess.run(tf.cast(resized_image, tf.float32)).tobytes()
             except:
                 print(image_filename)
                 continue

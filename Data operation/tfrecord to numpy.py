@@ -31,7 +31,7 @@ def load_images_from_tfrecord(tfrecord_file):
             'image': tf.FixedLenFeature([], tf.string),
         })
 
-    record_image = tf.decode_raw(features['image'], tf.uint8)
+    record_image = tf.decode_raw(features['image'], tf.float32)
 
     # Changing the image into this shape helps train and visualize the output by converting it to
     # be organized like an image.
