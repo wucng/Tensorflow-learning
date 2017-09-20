@@ -61,7 +61,7 @@ http://blog.csdn.net/wc781708249/article/details/78013275
 parser = argparse.ArgumentParser()
 parser.add_argument("-bs", "--batch_size", help="The batch size",type=int,default=128)
 parser.add_argument("-do", "--droup_out", help="The droup out",type=float,default=0.7)
-parser.add_argument("-lr", "--learn_rate", help="The learn rate",type=float,default=1e-2)
+parser.add_argument("-lr", "--learn_rate", help="The learn rate",type=float,default=1e-1)
 parser.add_argument("-ns", "--num_steps", help="The num steps",type=int,default=100000)
 parser.add_argument("-ds", "--disply_step", help="The disp step",type=int,default=2000)
 parser.add_argument("-ipi", "--img_piexl", help="The image piexl",type=int,default=32)

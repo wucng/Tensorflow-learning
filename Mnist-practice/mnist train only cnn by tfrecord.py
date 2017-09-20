@@ -61,8 +61,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-bs", "--batch_size", help="The batch size",type=int,default=128)
 parser.add_argument("-do", "--droup_out", help="The droup out",type=float,default=0.7)
 parser.add_argument("-lr", "--learn_rate", help="The learn rate",type=float,default=1e-1)
-parser.add_argument("-ns", "--num_steps", help="The num steps",type=int,default=1000)
-parser.add_argument("-ds", "--disply_step", help="The disp step",type=int,default=200)
+parser.add_argument("-ns", "--num_steps", help="The num steps",type=int,default=100000)
+parser.add_argument("-ds", "--disply_step", help="The disp step",type=int,default=2000)
 parser.add_argument("-ipi", "--img_piexl", help="The image piexl",type=int,default=28)
 parser.add_argument("-ch", "--channels", help="The image channels",type=int,default=1)
 parser.add_argument("-nc", "--n_classes", help="The image n classes",type=int,default=10)
@@ -75,8 +75,8 @@ print("args:",args)
 
 batch_size=args.batch_size
 droup_out = args.droup_out
-learn_rate = args.learn_rate
-# INITIAL_LEARNING_RATE=args.learn_rate
+# learn_rate = args.learn_rate
+INITIAL_LEARNING_RATE=args.learn_rate
 num_steps = args.num_steps
 disp_step = args.disply_step
 img_piexl=args.img_piexl
@@ -221,7 +221,7 @@ global_step = tf.Variable(0, name="global_step", trainable=False)
       #                                            10000,
       #                                            0.96,
       #                                            staircase=False)
-# learn_rate=tf.train.polynomial_decay(INITIAL_LEARNING_RATE,global_step,70000,1e-6,0.8,False)
+learn_rate=tf.train.polynomial_decay(INITIAL_LEARNING_RATE,global_step,70000,1e-6,0.8,False)
 
 
 train_op=tf.train.AdamOptimizer(learn_rate).minimize(loss,global_step=global_step)
