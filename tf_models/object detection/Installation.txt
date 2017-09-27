@@ -2,8 +2,6 @@
 
 Installation
 
-# 先下载models  如：存放在 /home/wu/tf_models/
-git clone https://github.com/tensorflow/models.git
 
 # For CPU
 pip3 install tensorflow
@@ -17,6 +15,9 @@ sudo pip3 install lxml
 sudo pip3 install jupyter
 # 启动jupyter 输入 jupyter notebook
 sudo pip3 install matplotlib
+
+# 下载models  如：存放在 /home/wu/tf_models/
+git clone https://github.com/tensorflow/models.git
 
 cd /home/wu/tf_models/models/research/
 protoc object_detection/protos/*.proto --python_out=.
