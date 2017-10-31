@@ -65,7 +65,7 @@ def load_images_from_tfrecord(tfrecord_file):
     '''
 
     # Converting the images to a float of [0,1) to match the expected input to convolution2d
-    # 将图像转换为灰度值位于[0,1)的浮点类型，
+    # 将图像转换为灰度值位于[0,1)的浮点类型，如果图像数据本身是float，转成float不会将像素值归一化到[0,1)
     float_image_batch = tf.image.convert_image_dtype(image_batch, tf.float32)
     return float_image_batch,label_batch
 

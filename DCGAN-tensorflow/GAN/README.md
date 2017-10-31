@@ -1,5 +1,15 @@
-理论：https://zhuanlan.zhihu.com/p/27166537
+鐢熸垚瀵规姉缃戠粶妯″瀷
 
-https://github.com/AYLIEN/gan-intro/blob/master/gan.py
-https://github.com/awjuliani/TF-Tutorials
-https://github.com/tflearn/tflearn/tree/master/examples/images
+鐞嗚锛歨ttps://zhuanlan.zhihu.com/p/27166537
+鍙傝�冿細
+1銆乭ttps://github.com/AYLIEN/gan-intro/blob/master/gan.py
+2銆乭ttps://github.com/awjuliani/TF-Tutorials
+3銆乭ttps://github.com/tflearn/tflearn/tree/master/examples/images
+
+ - DCGAN tf.py -mnist鐢熸垚瀵规姉缃戠粶
+ - DCGAN tflearn.py -mnist tflearn鐢熸垚瀵规姉
+ - GAN by mnist +convd.py -mnist鐢熸垚瀵规姉缃戠粶
+ - GAN by mnist.py
+ - GAN tflearn.py -tflearn
+ - GAN tflearn+tf.py -tf+tflearn 鐢熸垚瀵规姉
+ - InfoGAN tf.py -

@@ -1,8 +1,11 @@
-﻿https://github.com/tensorflow/models/tree/master/research/object_detection
+object_detection_tutorial
 
-Installation
+参考：
+1、https://github.com/tensorflow/models/tree/master/research/object_detection
 
+#Installation
 
+```
 # For CPU
 pip3 install tensorflow
 # For GPU
@@ -27,8 +30,11 @@ vim ~/.bashrc
 写入 export PYTHONPATH=$PYTHONPATH:'/home/wu/tf_models/models/research':'/home/wu/tf_models/models/research/slim'
 
 bash
+```
 
 # 测试
+
+```python
 python3 object_detection/builders/model_builder_test.py
 
 """
@@ -36,6 +42,5 @@ Ran 7 tests in 0.016s
 
 OK
 """
-
-
+```
 
