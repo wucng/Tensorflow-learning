@@ -14,10 +14,10 @@ import tensorflow.contrib.slim as slim
 # 然后就能使用slim API
 ```
 
-#Preparing the datasets
+# Preparing the datasets
 ![这里写图片描述](http://img.blog.csdn.net/20171101094912227?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvd2M3ODE3MDgyNDk=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
 
-#Downloading and converting to TFRecord format
+# Downloading and converting to TFRecord format
 
 ```
 $ DATA_DIR=/tmp/data/flowers
@@ -25,9 +25,9 @@ $ python download_and_convert_data.py \
     --dataset_name=flowers \
     --dataset_dir="${DATA_DIR}"
 ```
-#Creating a TF-Slim Dataset Descriptor.
+# Creating a TF-Slim Dataset Descriptor.
 
-```
+```python
 import tensorflow as tf
 from datasets import flowers
 
@@ -41,7 +41,7 @@ dataset = flowers.get_split('validation', DATA_DIR)
 provider = slim.dataset_data_provider.DatasetDataProvider(dataset)
 [image, label] = provider.get(['image', 'label'])
 ```
-#An automated script for processing ImageNet data.
+# An automated script for processing ImageNet data.
 
 ```
 # location of where to place the ImageNet data
@@ -54,7 +54,7 @@ bazel build slim/download_and_preprocess_imagenet
 bazel-bin/slim/download_and_preprocess_imagenet "${DATA_DIR}"
 ```
 
-#Pre-trained Models
+# Pre-trained Models
 ![这里写图片描述](http://img.blog.csdn.net/20171101095000480?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvd2M3ODE3MDgyNDk=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
 
 ```
@@ -68,7 +68,7 @@ $ rm inception_v3_2016_08_28.tar.gz
 
 
 
-#Training a model from scratch
+# Training a model from scratch
 
 ```
 DATASET_DIR=/tmp/imagenet
@@ -80,13 +80,13 @@ python train_image_classifier.py \
     --dataset_dir=${DATASET_DIR} \
     --model_name=inception_v3
 ```
-#TensorBoard
+# TensorBoard
 
 ```
 tensorboard --logdir=${TRAIN_DIR}
 ```
 
-#Fine-tuning a model from an existing checkpoint
+# Fine-tuning a model from an existing checkpoint
 
 ```
 $ DATASET_DIR=/tmp/flowers
@@ -103,7 +103,7 @@ $ python train_image_classifier.py \
     --trainable_scopes=InceptionV3/Logits,InceptionV3/AuxLogits
 ```
 
-#Evaluating performance of a model
+# Evaluating performance of a model
 
 ```
 CHECKPOINT_FILE = ${CHECKPOINT_DIR}/inception_v3.ckpt  # Example
@@ -116,7 +116,7 @@ $ python eval_image_classifier.py \
     --model_name=inception_v3
 ```
 
-#Exporting the Inference Graph
+# Exporting the Inference Graph
 
 ```
 $ python export_inference_graph.py \
@@ -131,7 +131,7 @@ $ python export_inference_graph.py \
   --output_file=/tmp/mobilenet_v1_224.pb
 ```
 
-#Freezing the exported Graph
+# Freezing the exported Graph
 
 ```
 bazel build tensorflow/python/tools:freeze_graph
@@ -142,7 +142,7 @@ bazel-bin/tensorflow/python/tools/freeze_graph \
   --input_binary=true --output_graph=/tmp/frozen_inception_v3.pb \
   --output_node_names=InceptionV3/Predictions/Reshape_1
 ```
-#Run label image in C++
+# Run label image in C++
 
 ```
 bazel build tensorflow/examples/label_image:label_image
@@ -156,7 +156,7 @@ bazel-bin/tensorflow/examples/label_image/label_image \
   --input_mean=0 \
   --input_std=255
 ```
-#Troubleshooting
+# Troubleshooting
 **The model runs out of CPU memory.**
 See [Model Runs out of CPU memory](https://github.com/tensorflow/models/tree/master/research/inception#the-model-runs-out-of-cpu-memory).
 
