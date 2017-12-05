@@ -1,6 +1,5 @@
 参考：
 1、https://github.com/tensorflow/models/tree/master/research/slim
-2、https://mp.weixin.qq.com/s/gUDJuS1HKkxUZaCHHUj7aw
 
 
 ----------
@@ -12,6 +11,9 @@ TF-Slim 是一个新的轻量的 TensorFlow 高级 API（tensorflow.contrib.slim
 ```python
 import tensorflow.contrib.slim as slim
 # 然后就能使用slim API
+# 或者
+import tensorflow as tf
+slim=tf.contrib.slim
 ```
 
 #Preparing the datasets
@@ -19,6 +21,8 @@ import tensorflow.contrib.slim as slim
 
 #Downloading and converting to TFRecord format
 
+参考：http://blog.csdn.net/wc781708249/article/details/78418313
+涉及数据的下载解压以及转tfr数据
 ```
 $ DATA_DIR=/tmp/data/flowers
 $ python download_and_convert_data.py \
@@ -26,7 +30,7 @@ $ python download_and_convert_data.py \
     --dataset_dir="${DATA_DIR}"
 ```
 #Creating a TF-Slim Dataset Descriptor.
-
+使用slim Dataset解析tfr数据
 ```
 import tensorflow as tf
 from datasets import flowers
@@ -57,13 +61,49 @@ bazel-bin/slim/download_and_preprocess_imagenet "${DATA_DIR}"
 #Pre-trained Models
 ![这里写图片描述](http://img.blog.csdn.net/20171101095000480?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvd2M3ODE3MDgyNDk=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast)
 
+ResNet V2 models use Inception pre-processing and input image size of 299 (use --preprocessing_name inception --eval_image_size 299 when using eval_image_classifier.py). Performance numbers for ResNet V2 models are reported on the ImageNet validation set.
+
+```python
+DATASET_DIR=./data/flowers
+EVAL_DIR=./tfmodel/eval
+CHECKPOINT_DIR=./checkpoints/inception_v3.ckpt
+python3 eval_image_classifier.py \
+--checkpoint_path=${CHECKPOINT_DIR} \
+--eval_dir=${EVAL_DIR} \
+--dataset_dir=${DATASET_DIR} \
+--dataset_name=flowers \
+--dataset_split_name=validation \
+--model_name=inception_v3 \
+--eval_image_size=299 \
+--moving_average_decay=0.9999
 ```
+
+
+----------
+
+
+```python
+# 以下是如何下载Inception V3 checkpoints的示例
 $ CHECKPOINT_DIR=/tmp/checkpoints
 $ mkdir ${CHECKPOINT_DIR}
 $ wget http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz
 $ tar -xvf inception_v3_2016_08_28.tar.gz
 $ mv inception_v3.ckpt ${CHECKPOINT_DIR}
 $ rm inception_v3_2016_08_28.tar.gz
+```
+写出test.sh
+
+```
+#!/bin/bash 
+
+CHECKPOINT_DIR=/tmp/checkpoints
+mkdir ${CHECKPOINT_DIR}
+wget http://download.tensorflow.org/models/inception_v3_2016_08_28.tar.gz
+tar -xvf inception_v3_2016_08_28.tar.gz
+mv inception_v3.ckpt ${CHECKPOINT_DIR}
+rm inception_v3_2016_08_28.tar.gz
+
+# 执行命令： sh test.sh
 ```
 
 

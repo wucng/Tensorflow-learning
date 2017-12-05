@@ -6,6 +6,7 @@ from __future__ import print_function
 """
 https://github.com/awjuliani/TF-Tutorials/blob/master/DCGAN.ipynb
 http://blog.csdn.net/wc781708249/article/details/78415691
+http://blog.csdn.net/wc781708249/article/details/78416659
 """
 
 #Import the libraries we will need.
@@ -18,6 +19,7 @@ import os
 import scipy.misc
 import scipy
 from skimage import io
+import dcgan
 
 
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=False)
@@ -57,7 +59,7 @@ def merge(images, size):
 
     return img
 
-
+"""
 def generator(z):
     '''
     The generator takes a vector of random numbers and transforms it into a 32x32 image.
@@ -117,7 +119,7 @@ def discriminator(bottom, reuse=False):
                                      reuse=reuse, scope='d_out', weights_initializer=initializer) # [n,1]
 
     return d_out
-
+"""
 # Connecting them together
 tf.reset_default_graph()
 
@@ -129,21 +131,34 @@ initializer = tf.truncated_normal_initializer(stddev=0.02)
 #These two placeholders are used for input into the generator and discriminator, respectively.
 z_in = tf.placeholder(shape=[None,z_size],dtype=tf.float32) #Random vector
 real_in = tf.placeholder(shape=[None,32,32,1],dtype=tf.float32) #Real images
+is_training= tf.placeholder(tf.bool, name='MODE')
 
-Gz = generator(z_in) #Generates images from random z vectors [n,32,32,1]
-Dx = discriminator(real_in) #Produces probabilities for real images [n,1]
-Dg = discriminator(Gz,reuse=True) #Produces probabilities for generator images [n,1]
+# Gz = generator(z_in) #Generates images from random z vectors [n,32,32,1]
+# Dx = discriminator(real_in) #Produces probabilities for real images [n,1]
+# Dg = discriminator(Gz,reuse=True) #Produces probabilities for generator images [n,1]
+
+Gz,_=dcgan.generator(z_in,num_outputs=1,is_training=is_training)  # [n,32,32,1]
+Dx,_ = dcgan.discriminator(real_in,is_training=is_training) #Produces probabilities for real images [n,1]
+Dg,_ = dcgan.discriminator(Gz,is_training=is_training,reuse=True) #Produces probabilities for generator images [n,1]
+
+
 
 #These functions together define the optimization objective of the GAN.
 d_loss = -tf.reduce_mean(tf.log(Dx) + tf.log(1.-Dg)) #This optimizes the discriminator.
 g_loss = -tf.reduce_mean(tf.log(Dg)) #This optimizes the generator.
 
 tvars = tf.trainable_variables()
-d_params = [v for v in tvars if v.name.startswith('D/')]
-g_params = [v for v in tvars if v.name.startswith('G/')]
+# d_params = [v for v in tvars if v.name.startswith('D/')]
+# g_params = [v for v in tvars if v.name.startswith('G/')]
+
+
+d_params = [v for v in tvars if v.name.startswith('Discriminator/')]
+g_params = [v for v in tvars if v.name.startswith('Generator/')]
+
+
 #The below code is responsible for applying gradient descent to update the GAN.
-trainerD = tf.train.AdamOptimizer(learning_rate=0.0002,beta1=0.5)
-trainerG = tf.train.AdamOptimizer(learning_rate=0.0002,beta1=0.5)
+trainerD = tf.train.AdamOptimizer(learning_rate=1e-5,beta1=0.5) # 0.0002
+trainerG = tf.train.AdamOptimizer(learning_rate=1e-5,beta1=0.5)
 # d_grads = trainerD.compute_gradients(d_loss,tvars[9:]) #Only update the weights for the discriminator network.
 # g_grads = trainerG.compute_gradients(g_loss,tvars[0:9]) #Only update the weights for the generator network.
 d_grads = trainerD.compute_gradients(d_loss,d_params) #Only update the weights for the discriminator network.
@@ -170,13 +185,13 @@ if train:
             xs,_ = mnist.train.next_batch(batch_size) #Draw a sample batch from MNIST dataset.
             xs = (np.reshape(xs,[batch_size,28,28,1]) - 0.5) * 2.0 #Transform it to be between -1 and 1
             xs = np.lib.pad(xs, ((0,0),(2,2),(2,2),(0,0)),'constant', constant_values=(-1, -1)) #Pad the images so the are 32x32
-            _,dLoss = sess.run([update_D,d_loss],feed_dict={z_in:zs,real_in:xs}) #Update the discriminator
-            _,gLoss = sess.run([update_G,g_loss],feed_dict={z_in:zs}) #Update the generator, twice for good measure.
-            _,gLoss = sess.run([update_G,g_loss],feed_dict={z_in:zs})
+            _,dLoss = sess.run([update_D,d_loss],feed_dict={z_in:zs,real_in:xs,is_training:True}) #Update the discriminator
+            _,gLoss = sess.run([update_G,g_loss],feed_dict={z_in:zs,is_training:True}) #Update the generator, twice for good measure.
+            _,gLoss = sess.run([update_G,g_loss],feed_dict={z_in:zs,is_training:True})
             if i % 10 == 0:
                 print("Gen Loss: " + str(gLoss) + " Disc Loss: " + str(dLoss))
                 z2 = np.random.uniform(-1.0,1.0,size=[batch_size,z_size]).astype(np.float32) #Generate another z batch
-                newZ = sess.run(Gz,feed_dict={z_in:z2}) #Use new z to get sample images from generator.
+                newZ = sess.run(Gz,feed_dict={z_in:z2,is_training:True}) #Use new z to get sample images from generator.
                 if not os.path.exists(sample_directory):
                     os.makedirs(sample_directory)
                 #Save sample generator images for viewing training progress.
@@ -205,7 +220,7 @@ else:
         saver.restore(sess, ckpt.model_checkpoint_path)
 
         zs = np.random.uniform(-1.0, 1.0, size=[batch_size_sample, z_size]).astype(np.float32)  # Generate a random z batch
-        newZ = sess.run(Gz, feed_dict={z_in: zs})  # Use new z to get sample images from generator.
+        newZ = sess.run(Gz, feed_dict={z_in: zs,is_training:False})  # Use new z to get sample images from generator.
         if not os.path.exists(sample_directory):
             os.makedirs(sample_directory)
         save_images(np.reshape(newZ[0:batch_size_sample], [36, 32, 32]), [6, 6],sample_directory + '/fig_test' + '.png') # 192x192
