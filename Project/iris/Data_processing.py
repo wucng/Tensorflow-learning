@@ -185,13 +185,14 @@ class Data_random_shuffle():
         for _ in range(batch_size-1):
             data2=tf.concat([data2,tf.reshape(data.dequeue(),[1,self.data.shape[1]])],0)
         return data2
-
+    
+    # 使用该方法 需将数据放入tf.train.input_producer或tf.train.string_input_producer等队列中，从队列中取出数据
+    # 参考读取csv和tfrecord数据时 使用shuffle_batch
     def tf_shuffle2(self,batch_size):
         min_after_dequeue = 1000
         capacity = min_after_dequeue + batch_size
-
         data = tf.train.shuffle_batch(
-            [self.data.reshape([1,3])], batch_size=batch_size, capacity=capacity,
+            [tf.train.input_producer(self.data, shuffle=True).dequeue()], batch_size=batch_size, capacity=capacity,
             min_after_dequeue=min_after_dequeue)
         return data
 
