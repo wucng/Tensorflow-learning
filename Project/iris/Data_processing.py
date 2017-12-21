@@ -196,6 +196,99 @@ class Data_random_shuffle():
             min_after_dequeue=min_after_dequeue)
         return data
 
+ 
+# ---------------生成多列标签 如：0,1 对应为[1,0],[0,1]------------#
+# 单列标签转成多列标签
+def dense_to_one_hot(labels_dense, num_classes):
+  """Convert class labels from scalars to one-hot vectors."""
+  # 从标量类标签转换为一个one-hot向量
+  num_labels = labels_dense.shape[0]
+  index_offset = np.arange(num_labels) * num_classes
+  # print index_offset
+  labels_one_hot = np.zeros((num_labels, num_classes))
+  labels_one_hot.flat[index_offset + labels_dense.ravel()] = 1
+  return labels_one_hot
+
+def dense_to_one_hot2(labels_dense,num_classes):
+    labels_dense=np.array(labels_dense,dtype=np.uint8)
+    num_labels = labels_dense.shape[0] # 标签个数
+    labels_one_hot=np.zeros((num_labels,num_classes),np.uint8)
+    for i,itenm in enumerate(labels_dense):
+        labels_one_hot[i,itenm]=1
+        # 如果labels_dense不是int类型，itenm就不是int，此时做数组的切片索引就会报错，
+        # 数组索引值必须是int类型，也可以 int(itenm) 强制转成int
+        # labels_one_hot[i, :][itenm] = 1
+    return labels_one_hot
+
+# next Batch
+start_index=0
+def next_batch(data,batch_size,img_pixel=60,channels=4):
+    global start_index  # 必须定义成全局变量
+    global second_index  # 必须定义成全局变量
+
+    second_index=start_index+batch_size
+    if second_index>len(data):
+        second_index=len(data)
+    data1=data[start_index:second_index]
+    # lab=labels[start_index:second_index]
+    start_index=second_index
+    if start_index>=len(data):
+        start_index = 0
+
+    # 将每次得到batch_size个数据按行打乱
+    index = [i for i in range(len(data1))]  # len(data1)得到的行数
+    np.random.shuffle(index)  # 将索引打乱
+    data1 = data1[index]
+
+    # 提起出数据和标签
+    img = data1[:, 0:img_pixel * img_pixel * channels]
+
+    # img = img * (1. / img.max) - 0.5
+    img = img * (1. / 255) - 0.5  # 数据归一化到 -0.5～0.5
+    # img=img.astype(float) # 类型转换
+
+    label = data1[:, -1]
+    label = label.astype(int)  # 类型转换
+
+    return img,label
+
+
+def next_batch(data, batch_size, flag, img_pixel=3, channels=4):
+    global start_index  # 必须定义成全局变量
+    global second_index  # 必须定义成全局变量
+
+    if 1==flag:
+        start_index = 0
+    # start_index = 0
+    second_index = start_index + batch_size
+
+    if second_index > len(data):
+        second_index = len(data)
+
+    data1 = data[start_index:second_index]
+    print('start_index', start_index, 'second_index', second_index)
+    
+    start_index = second_index
+    if start_index >= len(data):
+        start_index = 0
+
+    # 将每次得到batch_size个数据按行打乱
+    index = [i for i in range(len(data1))]  # len(data1)得到的行数
+    np.random.shuffle(index)  # 将索引打乱
+    data1 = data1[index]
+
+    # 提取出数据和标签
+    img = data1[:, 0:img_pixel * img_pixel * channels]
+
+    # img = img * (1. / img.max) - 0.5
+    img = img * (1. / 255) - 0.5  # 数据归一化到 -0.5～0.5
+    img = img.astype(np.float32)  # 类型转换
+
+    label = data1[:, -1]
+    label = label.astype(int)  # 类型转换
+
+    return img, label
+    
 
 if __name__=="__main__":
     # d=Data_processing('iris.data')
