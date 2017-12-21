@@ -154,7 +154,9 @@ class Data_processing():
                        lambda: batch_norm(inputT, is_training=False,
                                           center=True, scale=True, activation_fn=tf.nn.relu, decay=0.9,
                                           scope=scope))  # , reuse = True))
-
+    
+    # tf_is_train = tf.placeholder(tf.bool, None)
+    # layer_input = tf.layers.batch_normalization(tf_x, training=tf_is_train)
 
 # 数据打乱
 class Data_random_shuffle():
